@@ -25,11 +25,12 @@ for item in base_list:
     elif type(item) == str:
         str_list.append(item)
     elif type(item) == list:
-        list_list.append(item)
+        list_list = item
 
 # Вывод результата
 print(int_list)
 print(str_list)
 print(list_list)
+
 
 
