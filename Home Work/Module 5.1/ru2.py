@@ -11,6 +11,7 @@ reserved_words = reserved_input.split()
 for word in reserved_words:
     text = text.replace(word, word.upper())
 
-# 5. Выводит измененного текста:
+# 5. Вывод измененного текста:
 print("Измененный текст:")
 print(text)
+
