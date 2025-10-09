@@ -38,7 +38,7 @@ print("Выберите уровень сложности:")
 print("легкий, средний, тяжелый")
 user_input = input().strip().lower()
 
-# 4. После Выбора уровня сложности, получаем список по которому  :
+# 4. После Выбора уровня сложности, получаем список по которому:
 if user_input == "средний":
     words = words_medium
     print("Выбран уровень сложности: средний")
@@ -51,7 +51,7 @@ else:
 
 print()
 
-# 5. Шаг 2: Запуск цикла по словам
+# 5. Шаг 2: Запуск цикла по словам:
 answers = {}
 
 for english_word, correct_translation in words.items():
@@ -71,7 +71,7 @@ for english_word, correct_translation in words.items():
 
     print()
 
-# 6. Шаг 3: Вывод результатов
+# 6. Шаг 3: Вывод результатов:
 correct_words = []
 incorrect_words = []
 
@@ -93,9 +93,10 @@ for word in incorrect_words:
 
 print()
 
-# 7. Шаг 4: Определение ранга пользователя
+# 7. Шаг 4: Определение ранга пользователя:
 correct_count = len(correct_words)
 rank = levels.get(correct_count)
 
 print(f"Ваш ранг:")
+
 print(rank)
