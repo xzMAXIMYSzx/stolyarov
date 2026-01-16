@@ -127,30 +127,7 @@ try:
     order_number = order_number_element.text
     print(f"Номер заказа: {order_number}")
 except:
-    try:
-        # Вариант 2: Поиск в заголовке
-        order_number_element = browser.find_element(By.XPATH, "//h2[contains(text(), 'order') or contains(text(), 'заказ')]")
-        order_text = order_number_element.text
-        if "#" in order_text or "№" in order_text:
-            # Извлекаем номер
-            import re
-            numbers = re.findall(r'[#№]\s*(\d+)', order_text)
-            if numbers:
-                order_number = numbers[0]
-                print(f"Номер заказа (способ 2): {order_number}")
-    except:
-        print("Не удалось получить номер заказа стандартными способами")
-
-# Если номер еще не найден, ищем в тексте страницы
-if not order_number:
-    try:
-        page_source = browser.page_source
-        numbers = re.findall(r'[#№]\s*(\d+)', page_source)
-        if numbers:
-            order_number = numbers[0]
-            print(f"Номер заказа (из текста страницы): {order_number}")
-    except:
-        print("Не удалось извлечь номер из текста страницы")
+    print("Не удалось получить номер заказа")
 
 # Выводим всю информацию о заказе
 print("\n" + "="*60)
