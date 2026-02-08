@@ -1,0 +1,320 @@
+# Шаг 1
+import pytest
+import allure
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.action_chains import ActionChains
+from webdriver_manager.chrome import ChromeDriverManager
+from faker import Faker
+import logging
+import time
+
+# Шаг 2.1
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Шаг 2.2
+fake = Faker("ru_RU")
+logger.info("Генерация рандомных данных настроена!")
+
+# Шаг 2.3
+if __name__ == "__main__":
+    logger.info("Тест логирования работает!")
+    print(f"Случайное имя: {fake.first_name()}")
+
+# Шаг 3.1 (создаем фикстуру)
+@pytest.fixture(scope="function")
+def driver():
+    logger.info("Инициализация браузера")
+    chrome_option = webdriver.ChromeOptions()
+    chrome_option.add_argument("--start-maximized")
+
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=chrome_option)
+    driver.maximize_window()
+
+    logger.info("Браузер открыт!")
+    yield driver
+
+    logger.info("Закрытие браузера")
+    driver.quit()
+    logger.info("Юраузер закрыт!")
+# Шаг 3.2
+def test_open_browser(driver):
+    driver.get("https://demo1wp.shoporg.ru/")
+    logger.info("Сайт открыт")
+    time.sleep(3)
+
+# Блок Закрытие информационного окна
+def close_window_before(driver, safe_hover):
+    try:
+        # Ожидание появления элемента
+        safe_hover(driver, By.CSS_SELECTOR,
+                ".woocommerce-store-notice.demo_store a")
+
+        # Клик через JavaScript
+        driver.execute_script("""
+            document.querySelector('.woocommerce-store-notice.demo_store a').click();
+        """)
+
+        logger.info("Всплывающее окно успешно закрыто")
+    except Exception as e:
+        logger.error(f"Всплывающее окно не обнаружено: {e}")
+
+# Шаг 4.1 Функция безопасного клика
+def safe_click(driver, by, value, max_attempt=3):
+    for attempt in range(max_attempt):
+        try:
+            element = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((by, value)))
+            element.click()
+            logger.info(f"Успешный клик по элементу: {by}={value}")
+            return True
+        except Exception as e:
+            logger.warning(f"Попытка {attempt + 1}/{max_attempt} не удалось: {e}")
+            #time.sleep(1)
+    logger.error(f"Не удалось кликнуть по элементу после {max_attempt} попыток")
+    raise Exception(f"Элемент {by}={value} не кликабелен")
+
+def test_click_catalog(driver):
+    driver.get("https://demo1wp.shoporg.ru/")
+    safe_click(driver, By.XPATH, "//button[@class='cat-nav-trigger']")
+    logger.info("Каталог открыт!")
+    time.sleep(2)
+
+# Шаг 5.1 Функция Перехода в категорию мужская одежда
+def safe_hover(driver, by, value): #Безопасное наведение
+    try:
+        element = WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((by, value)))
+        ActionChains(driver).move_to_element(element).perform()
+        logger.info(f"Успешное наведение на элекмен: {by}={value}")
+        return element # return element как вариант
+    except Exception as e:
+        logger.info(f"Ошибка при наведении на элемент: {e}")
+        raise Exception(f"Элемент {by}={value} не доступен для наведения")
+
+# Шаг 5.2 Функция навигации
+def navigate_to_category(driver):
+    logger.info("Начало: Навигация по категориям")
+
+    # Наведение на меню "Одежда"
+    logger.info("Наведение на меню 'Одежда'")
+    safe_hover(driver, By.XPATH, "//li[@id='menu-item-927']")
+    # Пауза 1 секунда для визуализации открытия подменю
+    time.sleep(1)
+
+    # Клик по "Мужская одежда"
+    logger.info("Клик по меню 'Мужская одежда'")
+    safe_click(driver, By.ID, "menu-item-920")
+    logger.info("Успешный переход в категорию 'Женская одежда")
+# Шаг 6.1 Тестируем фильтр
+# ============================================================
+def apply_price_filter(driver):
+   logger.info("Начало: Применение фильтра по цене")
+
+   WebDriverWait(driver, 15).until(
+     EC.presence_of_element_located((
+         By.XPATH, "//span[contains(@class, 'ui-slider-handle')]")))
+
+   sliders = driver.find_elements(By.XPATH, "//span[contains(@class, 'ui-slider-handle')]")
+   if len(sliders) >= 2:
+        right_slider = sliders[1]
+        logger.info(f"Найдено ползунков: {len(sliders)}. Используем правый ползунок (индекс 1)")
+        ActionChains(driver).drag_and_drop_by_offset(right_slider, -200, 0).perform()
+        logger.info("Правый ползунок успешно перетащен влево")
+   else:
+        logger.warning(f"Найдено только {len(sliders)} ползунка(ов). Используем первый ползунок")
+
+
+# Шаг 7.1 Создадим функцию выбора товара
+def select_product(driver):
+    logger.info("Выбор товара...")
+    safe_click(driver, By.XPATH, "//h2[contains(text(), 'Черное спортивное платье приталенного кроя')]")
+    logger.info("Товар выбран")
+    time.sleep(2)
+
+# Шаг 8.1 Создадим функцию очистки/установки поля количества товара
+def safe_send_keys(driver, by, value, text):
+    element = WebDriverWait(driver, 10).until(
+        EC.visibility_of_element_located((by, value)))
+    element.clear()
+    element.send_keys(text)
+    logger.info(f"Введен текст: {text}")
+# Шаг 8.2
+def set_product_quantity(driver, quantity="1"):
+    logger.info(f"Установка количества товара: {quantity}")
+    safe_send_keys(driver, By.XPATH, "//input[@name='quantity']", quantity)
+    logger.info(f"Количество товара установлено: {quantity}")
+
+# Шаг 9.1 Создаем функцию добавления в корзину
+def add_to_cart(driver):
+    logger.info("Начало: Добавление товара в корзину")
+    # Безопасный клик по кнопке "Купить"
+    safe_click(driver, By.XPATH, "//button[@name='add-to-cart']")
+    logger.info("Товар успешно добавлен в корзину")
+
+
+# Шаг 10.1 Создаем функцию заполнения формы
+def fill_order_form(driver):
+    logger.info("Заполнение формы заказа")
+
+    # Создаем словарь с полями формы и случайными значениями
+    order_data = {
+        "billing_first_name": fake.first_name(),  # Случайное имя
+        "billing_last_name": fake.last_name(),  # Случайная фамилия
+        "billing_address_1": fake.street_address(),  # Случайный адрес улицы
+        "billing_city": fake.city(),  # Случайный город
+        "billing_postcode": fake.postcode(),  # Случайный почтовый индекс
+        "billing_phone": fake.phone_number(),  # Случайный номер телефона
+        "billing_email": fake.email(),  # Случайный адрес электронной почты
+    }
+
+    # Проходим по всем полям формы и заполняем их
+    for field, value in order_data.items():
+        logger.info(f"Заполнение поля '{field}'")
+        # Безопасный ввод значения в поле
+        safe_send_keys(driver, By.XPATH, f"//input[@id='{field}']", value)
+        logger.info(f"Поле '{field}' успешно заполнено значением '{value}'")
+
+    logger.info("Форма заказа успешно заполнена")
+
+
+# Шаг 11.1 Создаем функцию установки чекбокса
+def accept_terms_and_conditions(driver):
+    logger.info("Начало: Установка чекбокса согласия с условиями")
+
+    checkbox_clicked = False
+
+    # Вариант 1: Поиск по ID 'terms'
+    if not checkbox_clicked:
+        try:
+            logger.info("Попытка 1: Поиск чекбокса по ID 'terms'")
+            terms_checkbox = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.ID, "terms"))
+            )
+            # Прокручиваем к элементу
+            driver.execute_script("arguments[0].scrollIntoView(true);", terms_checkbox)
+            time.sleep(0.5)
+            terms_checkbox.click()
+            logger.info("Чекбокс успешно установлен по ID 'terms'")
+            checkbox_clicked = True
+        except Exception as e:
+            logger.warning(f"Чекбокс по ID 'terms' не найден: {str(e)}")
+# Вариант 2: Поиск по имени 'terms'
+    if not checkbox_clicked:
+        try:
+            logger.info("Попытка 2: Поиск чекбокса по имени 'terms'")
+            terms_checkbox = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.NAME, "terms"))
+            )
+            driver.execute_script("arguments[0].scrollIntoView(true);", terms_checkbox)
+            time.sleep(0.5)
+            terms_checkbox.click()
+            logger.info("Чекбокс успешно установлен по имени 'terms'")
+            checkbox_clicked = True
+        except Exception as e:
+            logger.warning(f"Чекбокс по имени 'terms' не найден: {str(e)}")
+
+    # Вариант 3: Поиск через лейбл
+    if not checkbox_clicked:
+        try:
+            logger.info("Попытка 3: Поиск чекбокса через лейбл")
+            terms_label = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, "//label[@for='terms']"))
+            )
+            driver.execute_script("arguments[0].scrollIntoView(true);", terms_label)
+            time.sleep(0.5)
+            terms_label.click()
+            logger.info("Чекбокс успешно установлен через лейбл")
+            checkbox_clicked = True
+        except Exception as e:
+            logger.warning(f"Чекбокс через лейбл не найден: {str(e)}")
+
+    # Вариант 4: Поиск по типу checkbox и части имени
+    if not checkbox_clicked:
+        try:
+            logger.info("Попытка 4: Поиск чекбокса по типу и части имени")
+            terms_checkbox = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, "//input[@type='checkbox' and contains(@id, 'term')]"))
+            )
+            driver.execute_script("arguments[0].scrollIntoView(true);", terms_checkbox)
+            time.sleep(0.5)
+            terms_checkbox.click()
+            logger.info("Чекбокс успешно установлен по типу и части имени")
+            checkbox_clicked = True
+        except Exception as e:
+            logger.warning(f"Чекбокс по типу не найден: {str(e)}")
+
+    if not checkbox_clicked:
+        logger.error("Не удалось найти и установить чекбокс согласия с условиями")
+        raise Exception("Чекбокс согласия не найден")
+
+    # Пауза для визуализации
+    time.sleep(1)
+    logger.info("Чекбокс согласия с условиями успешно установлен")
+
+
+# Шаг 12.1 Создаем функцию клик по кнопке place_order
+def place_order(driver):
+    logger.info("Оформление заказа")
+    place_order_button = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.ID, 'place_order')))
+
+    # Прокручиваем страницу к кнопке
+    logger.info("Прокрутка страницы к кнопке оформления заказа")
+    driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", place_order_button)
+    time.sleep(1)
+
+    #Клик по кнопке
+    # Кликаем по кнопке
+    logger.info("Клик по кнопке 'Оформить заказ'")
+    place_order_button.click()
+
+    # Пауза для визуализации отправки заказа
+    time.sleep(2)
+
+    logger.info("Заказ успешно оформлен!")
+
+# Шаг 12.2 Тестируем
+def purchase_flow(driver):
+    driver.get("https://demo1wp.shoporg.ru/")
+    test_click_catalog(driver)
+    navigate_to_category(driver)
+    apply_price_filter(driver)
+    select_product(driver)
+    set_product_quantity(driver)
+    add_to_cart(driver)
+    fill_order_form(driver)
+    accept_terms_and_conditions(driver)
+    place_order(driver)
+    logger.info(f"Клик по кнопке = {place_order} успешно выполнен")
+    time.sleep(2)
+
+# Шаг 13. Декорируем тест для Allure отчета
+@allure.feature("Покупка товара!")
+@allure.story("Полный сценарий покупки товара!")
+@allure.title("Тест покупки 'Черное спортивное платье приталенного кроя'")
+@allure.description("""
+1. Открытие сайта и закрытие всплывающих окон
+2. Открытие каталога товаров
+3. Навигация в категорию 'Женская одежда'
+4. Применение фильтра по цене
+5. Выбор товара 'Черное спортивное платье приталенного кроя'
+6. Изменение количества товара
+7. Добавление товара в корзину
+8. Переход к оформлению заказа
+9. Заполнение формы заказа случайными данными
+10. Принятие условий соглашения
+11. Оформление заказа
+""")
+@allure.severity(allure.severity_level.CRITICAL)
+def test_full_purchase(driver):
+    driver.get("https://demo1wp.shoporg.ru/")
+    purchase_flow(driver)
