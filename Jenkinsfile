@@ -17,7 +17,7 @@ pipeline {
                     set PYTHONIOENCODING=utf-8
                     set PYTHONUTF8=1
                     "C:\\python\\python.exe" -m pip install --upgrade pip
-                    "C:\\python\\python.exe" -m pip install -r requirements.tx
+                    "C:\\python\\python.exe" -m pip install -r requirements.txt
                 '''
             }
         }
