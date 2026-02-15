@@ -9,7 +9,7 @@ pipeline {
             }
         }
         
-        stage('Setup') {
+        stage('Setup')  {
             steps {
                 echo 'Установка зависимостей...'
                 bat '''
