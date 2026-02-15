@@ -12,8 +12,8 @@ pipeline {
         stage('Setup') {
             steps {
                 echo 'Установка зависимостей...'
-                bat 'python -m pip install --upgrade pip'
-                bat 'pip install -r requirements.txt'
+                bat 'C:\\Users\\MAXIMUS\\AppData\\Local\\Programs\\Python\\Python313\\python.exe -m pip install --upgrade pip'
+                bat 'C:\\Users\\MAXIMUS\\AppData\\Local\\Programs\\Python\\Python313\\python.exe -m pip install -r requirements.txt'
             }
         }
         
