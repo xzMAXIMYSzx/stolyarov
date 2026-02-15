@@ -194,7 +194,7 @@ def search_for_hats(driver):
     """Поиск товара 'Шляпы' через строку поиска"""
     logger.info("Поиск товара 'Шляпы'")
 
-    # Находим поле и пишем текст
+    # Находим поле и пишем текст - "Шляпы"
     input_field = safe_wait_for_element(driver, By.XPATH, "//*[@id='main-header6']//input[2]")
     input_field.clear()
     input_field.send_keys("Шляпы")
@@ -286,7 +286,7 @@ def place_order(driver):
                                         "//button[@class='button alt']"))
     )
 
-    # Прокрутка к кнопке
+    # Прокрутка к кнопке - "Place_Order"
     driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", place_order_button)
     time.sleep(1)
 
