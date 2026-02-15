@@ -58,7 +58,7 @@ def generate_review_data():
     """Блок с рандомными переменными для отзыва"""
     data = {
         "review_text": fake.text(max_nb_chars=200),
-        "author": "КоТвМешке",
+        "author": "Столяров Андрей",
         "email": fake.email()
     }
     logger.debug(f"Сгенерированы данные для отзыва: автор={data['author']}, email={data['email']}")
@@ -211,7 +211,7 @@ def search_for_hats(driver):
 
 
 
-def set_product_quantity(driver, quantity=1):
+def set_product_quantity(driver, quantity=2):
     """Установка количества товара"""
     logger.info(f"Установка количества товара: {quantity}")
     safe_send_keys(driver, By.XPATH, "//input[@type='number']", str(quantity), clear_first=True)
