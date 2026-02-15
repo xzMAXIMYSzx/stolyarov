@@ -58,7 +58,7 @@ def generate_review_data():
     """Блок с рандомными переменными для отзыва"""
     data = {
         "review_text": fake.text(max_nb_chars=200),
-        "author": "Столяров Андрей",
+        "author": "КоТвМешке",
         "email": fake.email()
     }
     logger.debug(f"Сгенерированы данные для отзыва: автор={data['author']}, email={data['email']}")
@@ -190,38 +190,25 @@ def open_website(driver, url):
     logger.info("Сайт успешно открыт")
 
 
-def navigate_to_shop(driver):
-    """Навигация в магазин"""
-    logger.info("Переход в раздел магазина")
-    safe_click(driver, By.XPATH, "//nav//li[1]/a")
-    safe_wait_for_element(driver, By.PARTIAL_LINK_TEXT, "Электроника")
-    logger.info("Успешный переход в магазин")
+def search_for_hats(driver):
+    """Поиск товара 'Шляпы' через строку поиска"""
+    logger.info("Поиск товара 'Шляпы'")
 
+    # Находим поле и пишем текст
+    input_field = safe_wait_for_element(driver, By.XPATH, "//*[@id='main-header6']//input[2]")
+    input_field.clear()
+    input_field.send_keys("Шляпы")
+    time.sleep(2)
 
-def select_product_category(driver):
-    """Выбор категории товара"""
-    logger.info("Выбор категории 'Электроника'")
-    safe_click(driver, By.PARTIAL_LINK_TEXT, "Электроника")
-    safe_wait_for_element(driver, By.XPATH, "//div[@class='product-img']")
-    logger.info("Категория успешно выбрана")
+    # Нажимаем кнопку найти
+    button = driver.find_element(By.XPATH, "//button[contains(@class, 'header-search-button')]")
+    button.click()
 
+    # Ожидание результатов
+    time.sleep(3)
+    safe_wait_for_element(driver, By.XPATH, "//input[@type='number']")  # Ждем поле количества (значит мы на странице товара)
+    logger.info("Страница товара загружена")
 
-def select_product(driver):
-    """Выбор конкретного товара - Смарт Часы"""
-    logger.info("Выбор товара 'Смарт Часы'")
-    time.sleep(1)
-
-    # Пробуем разные локаторы для Смарт Часов
-    try:
-        safe_click(driver, By.XPATH, "//a[contains(text(), 'Смарт Часы')]")
-    except:
-        try:
-            safe_click(driver, By.XPATH, "//img[contains(@alt, 'Смарт Часы')]")
-        except:
-            safe_click(driver, By.XPATH, "//div[@class='product-img']//a[2]/img")
-
-    safe_wait_for_element(driver, By.XPATH, "//input[@type='number']")
-    logger.info("Товар 'Смарт Часы' успешно выбран")
 
 
 def set_product_quantity(driver, quantity=1):
@@ -342,26 +329,44 @@ def leave_review(driver, review_data):
 
 
 def verify_review_author(driver, expected_author):
-    """Проверка автора отзыва"""
-    logger.info("Проверка автора отзыва")
+    """Проверка автора отзыва - поиск среди всех отзывов"""
+    logger.info(f"Поиск автора '{expected_author}' среди всех отзывов")
 
     try:
+        # Ждем загрузки отзывов
         safe_wait_for_element(driver, By.XPATH, "//p[@class='meta']", timeout=15)
-        actual_author = safe_get_text(driver, By.XPATH,
-                                      "//p[@class='meta']//strong[@class='woocommerce-review__author']")
 
-        assert actual_author == expected_author, f"Ожидался {expected_author}, получен {actual_author}"
-        logger.info(f"✅ Проверка автора отзыва пройдена: {actual_author}")
-        return True
+        # Находим всех авторов отзывов
+        authors = driver.find_elements(By.XPATH, "//p[@class='meta']//strong[@class='woocommerce-review__author']")
+
+        logger.info(f"Найдено отзывов: {len(authors)}")
+
+        # Перебираем всех авторов в цикле
+        for i, author_element in enumerate(authors, 1):
+            author_text = author_element.text
+            logger.info(f"Отзыв {i}: автор '{author_text}'")
+
+            if author_text == expected_author:
+                logger.info(f"✅ Найден нужный автор '{expected_author}' в отзыве №{i}")
+                return True
+
+        # Если не нашли
+        logger.error(f"❌ Автор '{expected_author}' не найден среди {len(authors)} отзывов")
+
+        # Для отладки выведем всех авторов
+        all_authors = [a.text for a in authors]
+        logger.error(f"Все найденные авторы: {all_authors}")
+
+        raise AssertionError(f"Автор '{expected_author}' не найден в списке отзывов")
+
     except TimeoutException:
-        try:
-            moderation_msg = safe_get_text(driver, By.XPATH,
-                                           "//*[contains(text(), 'Your review is awaiting approval')]")
-            logger.warning(f"Отзыв ожидает модерации: {moderation_msg}")
-            return False
-        except:
-            logger.error("Отзыв не найден")
-            raise
+        logger.error("Отзывы не загрузились")
+        driver.save_screenshot(f"no_reviews_{time.strftime('%Y%m%d_%H%M%S')}.png")
+        raise
+    except Exception as e:
+        logger.error(f"Ошибка при проверке автора: {e}")
+        driver.save_screenshot(f"author_check_error_{time.strftime('%Y%m%d_%H%M%S')}.png")
+        raise
 
 
 # ============================================================
@@ -389,24 +394,38 @@ def main():
         # Часть 1: Оформление заказа
         logger.info("--- ЧАСТЬ 1: Оформление заказа ---")
         open_website(driver, "http://qa228.karpin74.beget.tech/")
-        navigate_to_shop(driver)
-        select_product_category(driver)
-        select_product(driver)
+
+        # Поиск шляп (сразу попадаем на страницу товара)
+        search_for_hats(driver)
+
+        # Установка количества и добавление в корзину
         set_product_quantity(driver, 1)
         click_add_to_cart(driver)
+
+        # Оформление заказа
         click_cart_main(driver)
         click_proceed_to_checkout(driver)
         checkout(driver, order_data)
         place_order(driver)
 
+        # Небольшая пауза после оформления заказа
+        time.sleep(3)
+
         # Часть 2: Оставление отзыва
         logger.info("--- ЧАСТЬ 2: Оставление отзыва ---")
-        navigate_to_shop(driver)
-        select_product_category(driver)
-        select_product(driver)
+
+        # ВОЗВРАЩАЕМСЯ НА ГЛАВНУЮ СТРАНИЦУ!
+        logger.info("Возврат на главную страницу")
+        driver.get("http://qa228.karpin74.beget.tech/")
+        time.sleep(2)
+
+        # Снова ищем шляпы
+        search_for_hats(driver)
+
+        # Оставляем отзыв
         leave_review(driver, review_data)
 
-        # Проверка
+        # Проверка автора отзыва
         verify_review_author(driver, review_data["author"])
 
         elapsed_time = time.time() - start_time
