@@ -269,7 +269,7 @@ def search_for_hats(driver):
 
 
 @allure.step("Установка количества товара: {quantity}")
-def set_product_quantity(driver, quantity=1):
+def set_product_quantity(driver, quantity=2):
     logger.info(f"Установка количества товара: {quantity}")
     safe_send_keys(driver, By.XPATH, "//input[@type='number']", str(quantity), clear_first=True)
     logger.info(f"Количество товара установлено на {quantity}")
