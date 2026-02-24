@@ -29,7 +29,7 @@ pipeline {
                     chcp 65001
                     set PYTHONIOENCODING=utf-8
                     set PYTHONUTF8=1
-                    "C:\\python\\python.exe" -m pytest test_shoporg.py -v --alluredir=allure-results --junitxml=test-results.xml
+                    "C:\\python\\python.exe" -m pytest avto.py -v --alluredir=allure-results --junitxml=test-results.xml
                 '''
             }
             post {
