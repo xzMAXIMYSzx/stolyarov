@@ -1,0 +1,380 @@
+{
+	"info": {
+		"_postman_id": "adeb429b-b91f-42c0-822e-58a851057d2f",
+		"name": "Avtosushi",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "44021487",
+		"_collection_link": "https://xzmaximyszx.postman.co/workspace/xzMAXIMYSzx's-Workspace~55b66029-73fb-4f22-82ba-ab3ca5575c17/collection/44021487-adeb429b-b91f-42c0-822e-58a851057d2f?action=share&source=collection_link&creator=44021487"
+	},
+	"item": [
+		{
+			"name": "menu",
+			"item": [
+				{
+					"name": "all menu",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Проверка статуса\r",
+									"pm.test(\"Статус 200 OK - страница доступна\", function() {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Проверка времени ответа\r",
+									"pm.test(\"Время ответа меньше 2 секунд\", function() {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(3000);\r",
+									"});\r",
+									"\r",
+									"// Проверка, что ответ не пустой\r",
+									"pm.test(\"Ответ не пустой\", function() {\r",
+									"    pm.expect(pm.response.text()).to.not.be.empty;\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/shop/menu?_rsc={{rscParam}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"shop",
+								"menu"
+							],
+							"query": [
+								{
+									"key": "_rsc",
+									"value": "{{rscParam}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "winter_menu",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Проверка статуса\r",
+									"pm.test(\"Статус 200 OK - страница доступна\", function() {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Проверка времени ответа\r",
+									"pm.test(\"Время ответа меньше 2 секунд\", function() {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(3000);\r",
+									"});\r",
+									"\r",
+									"// Проверка, что ответ не пустой\r",
+									"pm.test(\"Ответ не пустой\", function() {\r",
+									"    pm.expect(pm.response.text()).to.not.be.empty;\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/shop/zimnee-menyu?_rsc={{rscParam}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"shop",
+								"zimnee-menyu"
+							],
+							"query": [
+								{
+									"key": "_rsc",
+									"value": "{{rscParam}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "vegan_menu",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Проверка статуса\r",
+									"pm.test(\"Статус 200 OK - страница доступна\", function() {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Проверка времени ответа\r",
+									"pm.test(\"Время ответа меньше 2 секунд\", function() {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(3000);\r",
+									"});\r",
+									"\r",
+									"// Проверка, что ответ не пустой\r",
+									"pm.test(\"Ответ не пустой\", function() {\r",
+									"    pm.expect(pm.response.text()).to.not.be.empty;\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/shop/veganskoe-menyu?_rsc={{rscParam}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"shop",
+								"veganskoe-menyu"
+							],
+							"query": [
+								{
+									"key": "_rsc",
+									"value": "{{rscParam}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "prem_menu",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Проверка статуса\r",
+									"pm.test(\"Статус 200 OK - страница доступна\", function() {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Проверка времени ответа\r",
+									"pm.test(\"Время ответа меньше 2 секунд\", function() {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(3000);\r",
+									"});\r",
+									"\r",
+									"// Проверка, что ответ не пустой\r",
+									"pm.test(\"Ответ не пустой\", function() {\r",
+									"    pm.expect(pm.response.text()).to.not.be.empty;\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/shop/premium-menyu?_rsc={{rscParam}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"shop",
+								"premium-menyu"
+							],
+							"query": [
+								{
+									"key": "_rsc",
+									"value": "{{rscParam}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "kids_box",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Проверка статуса\r",
+									"pm.test(\"Статус 200 OK - страница доступна\", function() {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Проверка времени ответа\r",
+									"pm.test(\"Время ответа меньше 2 секунд\", function() {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(3000);\r",
+									"});\r",
+									"\r",
+									"// Проверка, что ответ не пустой\r",
+									"pm.test(\"Ответ не пустой\", function() {\r",
+									"    pm.expect(pm.response.text()).to.not.be.empty;\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/shop/kids-boksy?_rsc={{rscParam}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"shop",
+								"kids-boksy"
+							],
+							"query": [
+								{
+									"key": "_rsc",
+									"value": "{{rscParam}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Auto_pizza",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Проверка статуса\r",
+									"pm.test(\"Статус 200 OK - страница доступна\", function() {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Проверка времени ответа\r",
+									"pm.test(\"Время ответа меньше 2 секунд\", function() {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(3000);\r",
+									"});\r",
+									"\r",
+									"// Проверка, что ответ не пустой\r",
+									"pm.test(\"Ответ не пустой\", function() {\r",
+									"    pm.expect(pm.response.text()).to.not.be.empty;\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/shop/avtopicca?_rsc={{rscParam}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"shop",
+								"avtopicca"
+							],
+							"query": [
+								{
+									"key": "_rsc",
+									"value": "{{rscParam}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "burger",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"// Проверка статуса\r",
+									"pm.test(\"Статус 200 OK - страница доступна\", function() {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"// Проверка времени ответа\r",
+									"pm.test(\"Время ответа меньше 2 секунд\", function() {\r",
+									"    pm.expect(pm.response.responseTime).to.be.below(3000);\r",
+									"});\r",
+									"\r",
+									"// Проверка, что ответ не пустой\r",
+									"pm.test(\"Ответ не пустой\", function() {\r",
+									"    pm.expect(pm.response.text()).to.not.be.empty;\r",
+									"});\r",
+									"\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/shop/burgery?_rsc={{rscParam}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"shop",
+								"burgery"
+							],
+							"query": [
+								{
+									"key": "_rsc",
+									"value": "{{rscParam}}"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
