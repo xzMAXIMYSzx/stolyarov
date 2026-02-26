@@ -33,11 +33,11 @@ pipeline {
                         // Запускаем Newman. Важно: используем бат-файл newman.bat
                         // и экранируем кавычки для Windows
                         bat """
-                            newman run "Avtosushi.postman_collection.json" ^
-                                --environment "Avto.postman_environment.json" ^
-                                --reporters allure ^
-                                --reporter-allure-export allure-results ^
-                                --suppress-exit-code
+                            "%APPDATA%\\npm\\newman.cmd" run "Avtosushi.postman_collection.json" ^
+        --environment "Avto.postman_environment.json" ^
+        --reporters allure ^
+        --reporter-allure-export allure-results ^
+        --suppress-exit-code
                         """
                         echo '✅ Postman тесты завершены'
                     }
