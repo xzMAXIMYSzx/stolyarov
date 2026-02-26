@@ -14,7 +14,6 @@ pipeline {
                 echo '🔧 Подготовка окружения...'
                 script {
                     dir('avtosushi-tests') {
-                        // В Windows используем 'bat' и команду npm
                         bat 'npm install -g newman newman-reporter-allure'
                         echo '✅ Newman установлен (или обновлен)'
                     }
@@ -27,41 +26,29 @@ pipeline {
                 echo '🚀 Запуск Postman API тестов...'
                 script {
                     dir('avtosushi-tests') {
-                        // Создаем папку для результатов (команда Windows)
                         bat 'if not exist "allure-results" mkdir allure-results'
 
-                        // Запускаем Newman. Важно: используем бат-файл newman.bat
-                        // и экранируем кавычки для Windows
+                        // Используем полный путь к newman.cmd
                         bat """
                             "%APPDATA%\\npm\\newman.cmd" run "Avtosushi.postman_collection.json" ^
-        --environment "Avto.postman_environment.json" ^
-        --reporters allure ^
-        --reporter-allure-export allure-results ^
-        --suppress-exit-code
+                                --environment "Avto.postman_environment.json" ^
+                                --reporters allure ^
+                                --reporter-allure-export allure-results ^
+                                --suppress-exit-code
                         """
                         echo '✅ Postman тесты завершены'
                     }
                 }
             }
         }
-
-        stage('Generate Allure Report') {
-            steps {
-                echo '📊 Генерация Allure отчета...'
-                script {
-                    dir('avtosushi-tests') {
-                        // Генерируем отчет. Предполагается, что allure есть в системе.
-                        bat 'allure generate allure-results -o allure-report --clean'
-                    }
-                }
-            }
-        }
+        
+        // Stage Generate Allure Report - УДАЛЕН!
     }
 
     post {
         always {
             echo '🏁 Завершение работы...'
-            // Публикуем Allure отчет из правильной папки
+            // Публикуем Allure отчет через плагин Jenkins
             allure includeProperties: false,
                   reportBuildPolicy: 'ALWAYS',
                   results: [[path: 'avtosushi-tests/allure-results']]
