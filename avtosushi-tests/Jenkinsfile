@@ -1,0 +1,81 @@
+pipeline {
+    agent any
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                echo '📥 Забираем код из Git...'
+                checkout scm
+            }
+        }
+        
+        stage('Prepare Environment') {
+            steps {
+                echo '🔧 Подготовка окружения...'
+                script {
+                    // Переходим в папку с тестами
+                    dir('avtosushi-tests') {
+                        // Устанавливаем Newman для Postman тестов
+                        sh 'npm install -g newman newman-reporter-allure'
+                        echo '✅ Newman установлен'
+                    }
+                }
+            }
+        }
+        
+        stage('Run Postman Tests') {
+            steps {
+                echo '🚀 Запуск Postman API тестов...'
+                script {
+                    dir('avtosushi-tests') {
+                        // Создаем папку для результатов
+                        sh 'mkdir -p allure-results'
+                        
+                        // Запускаем Newman с твоими файлами
+                        sh """
+                            newman run "Avtosushi.postman_collection.json" \
+                                --environment "Avto.postman_environment.json" \
+                                --reporters allure \
+                                --reporter-allure-export allure-results \
+                                --suppress-exit-code
+                        """
+                        echo '✅ Postman тесты завершены'
+                    }
+                }
+            }
+        }
+        
+        stage('Generate Allure Report') {
+            steps {
+                echo '📊 Генерация Allure отчета...'
+                script {
+                    dir('avtosushi-tests') {
+                        // Генерируем отчет из результатов
+                        sh 'allure generate allure-results -o allure-report --clean'
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo '🏁 Завершение работы...'
+            // Публикуем Allure отчет из правильной папки
+            allure includeProperties: false,
+                  reportBuildPolicy: 'ALWAYS',
+                  results: [[path: 'avtosushi-tests/allure-results']]
+            
+            // Архивация HTML отчета
+            archiveArtifacts artifacts: 'avtosushi-tests/allure-report/**', fingerprint: true
+        }
+        
+        success {
+            echo '✅ Все тесты успешно пройдены!'
+        }
+        
+        failure {
+            echo '❌ Некоторые тесты упали. Проверьте отчет.'
+        }
+    }
+}
