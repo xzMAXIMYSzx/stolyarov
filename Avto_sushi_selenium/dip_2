@@ -1,0 +1,600 @@
+import pytest
+import allure
+# ============================================================
+# БЛОК 1: ИМПОРТ БИБЛИОТЕК
+# ============================================================
+# Подключение необходимых библиотек для автоматизации тестирования
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, ElementClickInterceptedException
+from selenium.webdriver.common.action_chains import ActionChains
+from webdriver_manager.chrome import ChromeDriverManager
+from faker import Faker
+import logging
+import time
+
+# ============================================================
+# БЛОК 2: НАСТРОЙКА ЛОГИРОВАНИЯ + Faker
+# ============================================================
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+logger = logging.getLogger(__name__)
+fake = Faker("ru_RU")
+
+
+# ============================================================
+# БЛОК 3: НАСТРОЙКА ALLURE
+# ============================================================
+def attach_screenshot(driver, step_name):
+    """Прикрепляет скриншот к отчету Allure с таймстампом"""
+    try:
+        screenshot = driver.get_screenshot_as_png()
+        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        allure.attach(
+            screenshot,
+            name=f"{step_name} ({timestamp})",
+            attachment_type=allure.attachment_type.PNG
+        )
+        logger.info(f"✅ Скриншот '{step_name}' прикреплен к отчету Allure")
+        return True
+    except Exception as e:
+        logger.warning(f"⚠️ Не удалось прикрепить скриншот '{step_name}': {e}")
+        return False
+
+
+def setup_browser():
+    """Инициализация вебдрайвера"""
+    logger.info("Запуск браузера Chrome")
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service)
+    driver.maximize_window()
+    logger.info("Браузер успешно запущен и развернут на весь экран")
+    return driver
+
+
+# ============================================================
+# БАЗОВЫЕ БЕЗОПАСНЫЕ ФУНКЦИИ
+# ============================================================
+def safe_wait_for_element(driver, by, value, timeout=10):
+    """Безопасное ожидание элемента"""
+    try:
+        element = WebDriverWait(driver, timeout).until(
+            EC.presence_of_element_located((by, value))
+        )
+        logger.debug(f"Элемент найден: {by}={value}")
+        return element
+    except TimeoutException:
+        logger.error(f"Элемент не найден за {timeout}с: {by}={value}")
+        raise
+
+
+def safe_wait_for_clickable(driver, by, value, timeout=10):
+    """Безопасное ожидание кликабельного элемента"""
+    try:
+        element = WebDriverWait(driver, timeout).until(
+            EC.element_to_be_clickable((by, value))
+        )
+        logger.debug(f"Элемент кликабелен: {by}={value}")
+        return element
+    except TimeoutException:
+        logger.error(f"Элемент не кликабелен за {timeout}с: {by}={value}")
+        raise
+
+
+def safe_wait_for_visible(driver, by, value, timeout=10):
+    """Безопасное ожидание видимого элемента"""
+    try:
+        element = WebDriverWait(driver, timeout).until(
+            EC.visibility_of_element_located((by, value))
+        )
+        logger.debug(f"Элемент видим: {by}={value}")
+        return element
+    except TimeoutException:
+        logger.error(f"Элемент не видим за {timeout}с: {by}={value}")
+        raise
+
+
+def safe_click(driver, by, value, max_attempt=3):
+    """Безопасное выполнение клика по элементу с повторными попытками"""
+    for attempt in range(max_attempt):
+        try:
+            element = safe_wait_for_clickable(driver, by, value)
+            element.click()
+            logger.info(f"Успешный клик по элементу: {by}={value}")
+            return True
+        except Exception as e:
+            logger.warning(f"Попытка {attempt + 1}/{max_attempt} не удалась: {str(e)}")
+            time.sleep(1)
+    logger.error(f"Не удалось кликнуть по элементу после {max_attempt} попыток")
+    raise Exception(f"Элемент {by}={value} не кликабелен")
+
+
+def safe_send_keys(driver, by, value, text, clear_first=True):
+    """Безопасный ввод текста в поле ввода"""
+    try:
+        element = safe_wait_for_visible(driver, by, value)
+        if clear_first:
+            element.clear()
+        element.send_keys(text)
+        logger.info(f"Успешно введен текст в элемент: {by}={value}")
+        return element
+    except Exception as e:
+        logger.error(f"Ошибка при вводе текста: {str(e)}")
+        raise Exception(f"Элемент {by}={value} не доступен для ввода")
+
+
+def safe_scroll_to_element(driver, by, value, timeout=10):
+    """Безопасная прокрутка к элементу"""
+    try:
+        element = safe_wait_for_element(driver, by, value, timeout)
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'smooth'});", element)
+        logger.info(f"Прокрутка к элементу выполнена: {by}={value}")
+        time.sleep(1)
+        return element
+    except Exception as e:
+        logger.error(f"Ошибка при прокрутке: {str(e)}")
+        raise
+
+
+def safe_get_text(driver, by, value, timeout=10):
+    """Безопасное получение текста элемента"""
+    try:
+        element = safe_wait_for_element(driver, by, value, timeout)
+        text = element.text
+        logger.debug(f"Текст элемента {by}={value}: {text}")
+        return text
+    except Exception as e:
+        logger.error(f"Ошибка при получении текста: {str(e)}")
+        raise
+
+
+def open_website(driver, url):
+    """Открытие страницы браузера"""
+    logger.info(f"Открытие сайта: {url}")
+    driver.get(url)
+    safe_wait_for_element(driver, By.TAG_NAME, "body", timeout=15)
+    logger.info("Сайт успешно открыт")
+
+
+def close_banners(driver):
+    """Закрывает модальные окна и баннеры"""
+    try:
+        city_button = WebDriverWait(driver, 3).until(
+            EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Да')]"))
+        )
+        city_button.click()
+        logger.info("✅ Баннер выбора города закрыт")
+        time.sleep(1)
+    except:
+        logger.info("⏩ Баннер выбора города не найден")
+
+    try:
+        cookies_button = WebDriverWait(driver, 3).until(
+            EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'OK') or contains(text(), 'Хорошо')]"))
+        )
+        cookies_button.click()
+        logger.info("✅ Баннер cookies закрыт")
+        time.sleep(1)
+    except:
+        logger.info("⏩ Баннер cookies не найден")
+
+
+def close_auth_popup(driver, url):
+    """Открывает сайт и закрывает окно авторизации, если оно есть"""
+    if url:
+        logger.info(f"Открытие сайта: {url}")
+        driver.get(url)
+
+    try:
+        button = safe_wait_for_clickable(
+            driver,
+            By.XPATH,
+            "//div[contains(@class, 'modal') or contains(@class, 'popup')]//button[.//svg]",
+            timeout=5
+        )
+        button.click()
+        logger.info("✅ Окно авторизации закрыто")
+        return True
+    except:
+        logger.info("ℹ️ Окно авторизации не появилось")
+        return False
+
+
+@allure.step("Поиск товара по названию: {query}")
+def search_product(driver, query):
+    """Активирует поиск, кликает по иконке и вводит текст"""
+    try:
+        logger.info("🔍 Активация поиска...")
+        search_trigger = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'sc-7d19f7fd-0')]"))
+        )
+        search_trigger.click()
+        logger.info("✅ Иконка поиска нажата")
+        time.sleep(1)
+
+        search_input = WebDriverWait(driver, 10).until(
+            EC.visibility_of_element_located((By.XPATH, "//input[@placeholder='Чем хочешь перекусить?']"))
+        )
+        search_input.click()
+        search_input.clear()
+        search_input.send_keys(query)
+        logger.info(f"✅ Введен текст: {query}")
+        search_input.send_keys(u'\ue007')
+        logger.info("✅ Поиск выполнен")
+
+        # Даём время на загрузку результатов
+        time.sleep(3)
+        attach_screenshot(driver, "Результаты_поиска")
+
+        # Пробуем найти элемент разными способами
+        domino = None
+        xpath_options = [
+            "//*[contains(text(), 'ролл Домино')]",
+            "//a[contains(@href, 'domino')]",
+            "//div[contains(@class, 'product')]//*[contains(text(), 'Домино')]"
+        ]
+
+        for xpath in xpath_options:
+            try:
+                domino = WebDriverWait(driver, 3).until(
+                    EC.element_to_be_clickable((By.XPATH, xpath))
+                )
+                logger.info(f"✅ Элемент найден по: {xpath}")
+                break
+            except:
+                continue
+
+        if not domino:
+            raise Exception("Элемент 'ролл Домино' не найден ни по одному XPath")
+
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", domino)
+        time.sleep(1)
+
+        try:
+            domino.click()
+        except ElementClickInterceptedException:
+            driver.execute_script("arguments[0].click();", domino)
+            logger.info("✅ Клик через JavaScript")
+
+        time.sleep(2)
+        attach_screenshot(driver, "Страница_товара")
+        return True
+
+    except Exception as e:
+        logger.error(f"❌ Ошибка поиска: {str(e)}")
+        attach_screenshot(driver, "Ошибка_поиска")
+        raise
+
+
+@allure.step("Добавление товара в корзину")
+def add_to_cart(driver):
+    try:
+        # Список возможных XPath для кнопки
+        xpath_options = [
+            "//button[contains(text(), '+') and contains(text(), '₽')]",
+            "//button[contains(@class, 'fxnMWR')]",
+            "//button[.//svg]",  # кнопка с иконкой
+            "//div[contains(@class, 'sc-f197920a-11')]//button",
+            "//button[contains(text(), '380')]"  # если цена 380
+        ]
+
+        add_button = None
+        for xpath in xpath_options:
+            try:
+                add_button = WebDriverWait(driver, 3).until(
+                    EC.element_to_be_clickable((By.XPATH, xpath))
+                )
+                logger.info(f"✅ Кнопка найдена по: {xpath}")
+                break
+            except:
+                continue
+
+        if not add_button:
+            raise Exception("Кнопка добавления не найдена ни по одному XPath")
+
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", add_button)
+        time.sleep(1)
+        ActionChains(driver).move_to_element(add_button).perform()
+        time.sleep(1)
+        add_button.click()
+        logger.info("✅ Товар добавлен в корзину")
+        time.sleep(2)
+        attach_screenshot(driver, "Товар_добавлен")
+        return True
+    except Exception as e:
+        logger.error(f"❌ Ошибка добавления в корзину: {e}")
+        attach_screenshot(driver, "Ошибка_добавления")
+        raise
+
+
+@allure.step("Ввод адреса доставки: {address}")
+def enter_delivery_address(driver, address):
+    """Находит поле адреса и вводит текст"""
+    try:
+        # Список возможных селекторов для поля адреса
+        selectors = [
+            (By.ID, "r_6", "по ID r_6"),
+            (By.XPATH, "//input[@placeholder='Введите адрес']", "по плейсхолдеру"),
+            (By.XPATH, "//input[contains(@class, 'sc-d355a125-5')]", "по классу sc-d355a125-5"),
+            (By.XPATH, "//div[contains(@class, 'sc-d355a125-4')]//input", "по контейнеру"),
+            (By.XPATH, "//input[@type='text' and contains(@placeholder, 'адрес')]", "комбинированный")
+        ]
+
+        address_input = None
+        selected_desc = ""
+
+        for by, selector, desc in selectors:
+            try:
+                address_input = WebDriverWait(driver, 3).until(
+                    EC.element_to_be_clickable((by, selector))
+                )
+                selected_desc = desc
+                logger.info(f"✅✅✅ СРАБОТАЛО: {desc} — {by} = {selector}")
+                break
+            except:
+                logger.debug(f"❌ Не сработало: {desc}")
+                continue
+
+        if not address_input:
+            raise Exception("Поле адреса не найдено ни по одному селектору")
+
+        # Прокрутка и наведение
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", address_input)
+        time.sleep(1)
+        ActionChains(driver).move_to_element(address_input).perform()
+        time.sleep(1)
+
+        # Ввод адреса
+        address_input.click()
+        address_input.clear()
+        address_input.send_keys(address)
+        logger.info(f"✅ Адрес '{address}' введён")
+
+        time.sleep(2)
+
+        # Жмём Enter или выбираем первую подсказку
+        address_input.send_keys(u'\ue007')
+        logger.info("✅ Адрес подтверждён")
+        allure.attach(
+            f"Сработал селектор: {selected_desc}",
+            name="Результат поиска поля адреса",
+            attachment_type=allure.attachment_type.TEXT
+        )
+        attach_screenshot(driver, "Адрес_введен")
+        return True
+    except Exception as e:
+        logger.error(f"❌ Ошибка при вводе адреса: {e}")
+        attach_screenshot(driver, "Ошибка_ввода_адреса")
+        raise
+
+
+@allure.step("Выбор адреса из списка: {address_text}")
+def select_address_from_list(driver, address_text):
+    """Выбирает адрес из выпадающего списка после ввода"""
+    try:
+        # Ждём появления списка адресов
+        time.sleep(2)  # небольшая пауза на загрузку
+
+        # Ищем элемент с нужным адресом
+        address_option = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, f"//*[contains(text(), '{address_text}')]"))
+        )
+
+        # Прокручиваем и кликаем
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center', behavior: 'smooth'});", address_option)
+        time.sleep(1)
+        ActionChains(driver).move_to_element(address_option).perform()
+        time.sleep(1)
+        address_option.click()
+        logger.info(f"✅ Выбран адрес: {address_text}")
+        attach_screenshot(driver, "Адрес_выбран")
+
+        # Ждём, пока появятся поля деталей
+        time.sleep(2)
+        return True
+    except Exception as e:
+        logger.error(f"❌ Ошибка выбора адреса: {e}")
+        attach_screenshot(driver, "Ошибка_выбора_адреса")
+        raise
+
+
+@allure.step("Ввод подъезда: {entrance}")
+def enter_entrance(driver, entrance):
+    entrance_input = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.XPATH, "//input[@name='entrance']"))
+    )
+    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", entrance_input)
+    time.sleep(1)
+    entrance_input.click()
+    entrance_input.clear()
+    entrance_input.send_keys(entrance)
+    logger.info(f"✅ Подъезд '{entrance}' введён")
+    attach_screenshot(driver, "Подъезд_введен")
+
+
+@allure.step("Ввод этажа: {floor}")
+def enter_floor(driver, floor):
+    try:
+        # Пробуем найти поле этажа
+        floor_input = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//input[@name='floor']"))
+        )
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", floor_input)
+        time.sleep(1)
+        floor_input.click()
+        floor_input.clear()
+        floor_input.send_keys(floor)
+        logger.info(f"✅ Этаж '{floor}' введён")
+        attach_screenshot(driver, "Этаж_введен")
+        return True
+    except:
+        # Если поле не найдено — пропускаем (не критично)
+        logger.info("ℹ️ Поле 'Этаж' не найдено — пропускаем")
+        return False
+
+
+@allure.step("Ввод квартиры: {apartment}")
+def enter_apartment(driver, apartment):
+    apt_input = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.XPATH, "//input[@name='apartment']"))
+    )
+    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", apt_input)
+    time.sleep(1)
+    apt_input.click()
+    apt_input.clear()
+    apt_input.send_keys(apartment)
+    logger.info(f"✅ Квартира '{apartment}' введена")
+    attach_screenshot(driver, "Квартира_введена")
+
+
+@allure.step("Ввод комментария: {comment}")
+def enter_comment(driver, comment):
+    comment_field = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.XPATH, "//textarea[@name='comment']"))
+    )
+    driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", comment_field)
+    time.sleep(1)
+    comment_field.click()
+    comment_field.clear()
+    comment_field.send_keys(comment)
+    logger.info(f"✅ Комментарий введён")
+    attach_screenshot(driver, "Комментарий_введен")
+
+
+@allure.step("Клик по кнопке подтверждения")
+def click_submit_button(driver):
+    try:
+        submit_button = WebDriverWait(driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, "//button[contains(@class, 'cYHiwG')]"))
+        )
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", submit_button)
+        time.sleep(1)
+        submit_button.click()
+        logger.info("✅ Кнопка подтверждения нажата")
+        attach_screenshot(driver, "Заказ_подтвержден")
+        return True
+    except Exception as e:
+        logger.error(f"❌ Ошибка при нажатии кнопки: {e}")
+        attach_screenshot(driver, "Ошибка_кнопки")
+        raise
+
+
+@allure.step("Переход в корзину")
+def go_to_cart(driver):
+    cart_link = WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.XPATH, "//a[contains(@href, 'cart') or contains(@class, 'cart')]"))
+    )
+    cart_link.click()
+    logger.info("✅ Перешли в корзину")
+    time.sleep(2)
+    attach_screenshot(driver, "Корзина_открыта")
+
+
+@allure.step("Закрытие модального окна авторизации")
+def close_auth_modal_if_present(driver):
+    try:
+        close_btn = WebDriverWait(driver, 5).until(
+            EC.element_to_be_clickable((By.XPATH, "//div[contains(@class, 'modal')]//button[.//svg]"))
+        )
+        close_btn.click()
+        logger.info("✅ Окно авторизации закрыто")
+    except:
+        logger.info("ℹ️ Окно авторизации не появилось")
+
+
+# ============================================================
+# ТЕСТ 1: Проверка заголовка сайта
+# ============================================================
+@allure.feature("Главная страница")
+@allure.story("Открытие сайта")
+@allure.title("Проверка наличия слова 'Автосуши' в заголовке")
+@allure.description("Тест проверяет, что сайт открывается и в заголовке есть слово Автосуши")
+def test_site_title():
+    """Тест проверяет, что сайт открывается и в заголовке есть слово Автосуши"""
+    driver = None
+    try:
+        with allure.step("Запуск браузера"):
+            driver = setup_browser()
+
+        with allure.step("Открытие сайта: https://new-tb.avtosushi.ru"):
+            open_website(driver, "https://new-tb.avtosushi.ru/")
+        attach_screenshot(driver, "Сайт_открыт")
+
+        with allure.step("Закрытие баннеров"):
+            close_banners(driver)
+        attach_screenshot(driver, "Баннеры_закрыты")
+
+        with allure.step("Получение заголовка страницы"):
+            title = driver.title
+            logger.info(f"Заголовок страницы: {title}")
+            allure.attach(title, name="Заголовок страницы", attachment_type=allure.attachment_type.TEXT)
+
+        with allure.step("Проверка наличия слова 'Автосуши' в заголовке"):
+            assert "Автосуши" in title, f"Ожидалось 'Автосуши' в заголовке, но получено: {title}"
+            logger.info("✓ Тест пройден: слово 'Автосуши' найдено в заголовке")
+
+        with allure.step("Закрытие модального окна авторизации (если есть)"):
+            close_auth_popup(driver, "https://new-tb.avtosushi.ru/")
+        attach_screenshot(driver, "Окно_авторизации_обработано")
+
+        with allure.step('Поиск товара "Ролл Домино"'):
+            search_product(driver, 'Ролл Домино')
+
+        with allure.step("Добавление товара в корзину"):
+            add_to_cart(driver)
+
+        with allure.step("Ввод адреса доставки"):
+            enter_delivery_address(driver, "Тамбов, Ленина 1")
+
+        with allure.step("Выбор адреса из списка"):
+            select_address_from_list(driver, "пл Ленина, д 1")
+
+        with allure.step("Ввод подъезда"):
+            enter_entrance(driver, "1")
+
+        with allure.step("Ввод этажа"):
+            enter_floor(driver, "3")
+
+        with allure.step("Ввод квартиры"):
+            enter_apartment(driver, "25")
+
+        with allure.step("Ввод комментария"):
+            enter_comment(driver, "Позвонить в домофон")
+
+        with allure.step("Подтверждение заказа"):
+            click_submit_button(driver)
+
+        time.sleep(3)  # ждём обработки
+
+        with allure.step("Переход в корзину"):
+            go_to_cart(driver)
+
+        with allure.step("Закрытие модального окна авторизации (если есть)"):
+            close_auth_modal_if_present(driver)
+
+        attach_screenshot(driver, "Тест_успешно_завершен")
+        time.sleep(2)
+
+    except Exception as e:
+        logger.error(f"✗ Тест упал с ошибкой: {str(e)}")
+        if driver:
+            attach_screenshot(driver, "Ошибка_выполнения_теста")
+        raise
+    finally:
+        if driver:
+            with allure.step("Закрытие браузера"):
+                driver.quit()
+                logger.info("Браузер закрыт")
+
+
+# ============================================================
+# ТОЧКА ВХОДА (для отладки - закомментировано для pytest)
+# ============================================================
+# if __name__ == "__main__":
+#     test_site_title()
