@@ -2,9 +2,10 @@ pipeline {
     agent any
     
     environment {
-        // Настройка кодировки для Windows
         PYTHONIOENCODING = 'utf-8'
         PYTHONUTF8 = '1'
+        // Замени на свой путь к Python
+        PYTHON_PATH = 'C:\\Python311\\python.exe'
     }
     
     stages {
@@ -18,21 +19,21 @@ pipeline {
         stage('Setup Dependencies') {
             steps {
                 echo '🔧 Установка зависимостей...'
-                bat '''
+                bat """
                     chcp 65001
-                    python -m pip install --upgrade pip
-                    python -m pip install -r requirements.txt
-                '''
+                    ${PYTHON_PATH} -m pip install --upgrade pip
+                    ${PYTHON_PATH} -m pip install -r requirements.txt
+                """
             }
         }
         
         stage('Run Tests') {
             steps {
                 echo '🚀 Запуск тестов...'
-                bat '''
+                bat """
                     chcp 65001
-                    python -m pytest dip_3.py -v --alluredir=allure-results --junitxml=test-results.xml
-                '''
+                    ${PYTHON_PATH} -m pytest dip_3.py -v --alluredir=allure-results --junitxml=test-results.xml
+                """
             }
             post {
                 always {
@@ -43,16 +44,9 @@ pipeline {
         
         stage('Allure Report') {
             steps {
-                echo '📊 Генерация Allure отчета...'
                 allure includeProperties: false,
                       jdk: '',
                       results: [[path: 'allure-results']]
-            }
-        }
-        
-        stage('Results Summary') {
-            steps {
-                echo '📋 Проверка завершена!'
             }
         }
     }
