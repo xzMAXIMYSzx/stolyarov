@@ -4,7 +4,7 @@ pipeline {
     environment {
         PYTHONIOENCODING = 'utf-8'
         PYTHONUTF8 = '1'
-        // Замени на свой путь к Python
+        // Укажи правильный путь к Python на Jenkins-машине
         PYTHON_PATH = 'C:\\Python311\\python.exe'
     }
     
@@ -22,7 +22,7 @@ pipeline {
                 bat """
                     chcp 65001
                     ${PYTHON_PATH} -m pip install --upgrade pip
-                    ${PYTHON_PATH} -m pip install -r requirements.txt
+                    ${PYTHON_PATH} -m pip install -r Avto_sushi_selenium/requirements.txt
                 """
             }
         }
@@ -32,7 +32,8 @@ pipeline {
                 echo '🚀 Запуск тестов...'
                 bat """
                     chcp 65001
-                    ${PYTHON_PATH} -m pytest dip_3.py -v --alluredir=allure-results --junitxml=test-results.xml
+                    cd Avto_sushi_selenium
+                    ${PYTHON_PATH} -m pytest dip_3.py -v --alluredir=../allure-results --junitxml=../test-results.xml
                 """
             }
             post {
@@ -44,6 +45,7 @@ pipeline {
         
         stage('Allure Report') {
             steps {
+                echo '📊 Генерация Allure отчета...'
                 allure includeProperties: false,
                       jdk: '',
                       results: [[path: 'allure-results']]
