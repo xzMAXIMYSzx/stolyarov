@@ -4,8 +4,7 @@ pipeline {
     environment {
         PYTHONIOENCODING = 'utf-8'
         PYTHONUTF8 = '1'
-        // Укажи правильный путь к Python на Jenkins-машине
-        PYTHON_PATH = 'C:\\Python311\\python.exe'
+        PYTHON_PATH = 'C:\\Python311\\python.exe'  // проверь путь!
     }
     
     stages {
@@ -21,8 +20,9 @@ pipeline {
                 echo '🔧 Установка зависимостей...'
                 bat """
                     chcp 65001
+                    cd Avto_sushi_selenium
                     ${PYTHON_PATH} -m pip install --upgrade pip
-                    ${PYTHON_PATH} -m pip install -r Avto_sushi_selenium/requirements.txt
+                    ${PYTHON_PATH} -m pip install -r requirements.txt
                 """
             }
         }
