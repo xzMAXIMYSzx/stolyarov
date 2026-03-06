@@ -1,5 +1,0 @@
-pytest
-selenium
-webdriver-manager
-allure-pytest
-faker
