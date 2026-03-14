@@ -4,7 +4,7 @@ pipeline {
     environment {
         PYTHONIOENCODING = 'utf-8'
         PYTHONUTF8 = '1'
-        PYTHON_PATH = 'python'  // проверь путь!
+        PATH = "C:\\python;${env.PATH}"  // Добавляем Python в PATH глобально
     }
     
     stages {
@@ -16,31 +16,25 @@ pipeline {
         }
         
         stage('Setup Dependencies') {
-    steps {
-        echo '🔧 Установка зависимостей...'
-        bat '''
-            chcp 65001
-            set PATH=C:\\python;%PATH%
-            cd Avto_sushi_selenium
-            python -m pip install --upgrade pip
-            python -m pip install -r requirements.txt
-        '''
-    }
-}
+            steps {
+                echo '🔧 Установка зависимостей...'
+                bat '''
+                    chcp 65001
+                    cd Avto_sushi_selenium
+                    python -m pip install --upgrade pip
+                    python -m pip install -r requirements.txt
+                '''
+            }
+        }
         
         stage('Run Tests') {
             steps {
                 echo '🚀 Запуск тестов...'
-                bat """
+                bat '''
                     chcp 65001
                     cd Avto_sushi_selenium
-                    ${PYTHON_PATH} -m pytest dip_3.py -v --alluredir=../allure-results --junitxml=../test-results.xml
-                """
-            }
-            post {
-                always {
-                    junit 'test-results.xml'
-                }
+                    python -m pytest dip_3.py -v --alluredir=../allure-results --junitxml=../test-results.xml
+                '''
             }
         }
         
@@ -57,6 +51,7 @@ pipeline {
     post {
         always {
             echo '🏁 Сборка завершена'
+            junit 'test-results.xml'  // Публикация JUnit отчета
         }
         success {
             echo '✅ Все тесты прошли успешно!'
