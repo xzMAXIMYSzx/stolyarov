@@ -16,16 +16,17 @@ pipeline {
         }
         
         stage('Setup Dependencies') {
-            steps {
-                echo '🔧 Установка зависимостей...'
-                bat """
-                    chcp 65001
-                    cd Avto_sushi_selenium
-                    ${PYTHON_PATH} -m pip install --upgrade pip
-                    ${PYTHON_PATH} -m pip install -r requirements.txt
-                """
-            }
-        }
+    steps {
+        echo '🔧 Установка зависимостей...'
+        bat '''
+            chcp 65001
+            set PATH=C:\\python;%PATH%
+            cd Avto_sushi_selenium
+            python -m pip install --upgrade pip
+            python -m pip install -r requirements.txt
+        '''
+    }
+}
         
         stage('Run Tests') {
             steps {
