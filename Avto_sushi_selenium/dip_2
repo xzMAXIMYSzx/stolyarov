@@ -162,27 +162,7 @@ def open_website(driver, url):
     logger.info("Сайт успешно открыт")
 
 
-def close_banners(driver):
-    """Закрывает модальные окна и баннеры"""
-    try:
-        city_button = WebDriverWait(driver, 3).until(
-            EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Да')]"))
-        )
-        city_button.click()
-        logger.info("✅ Баннер выбора города закрыт")
-        time.sleep(1)
-    except:
-        logger.info("⏩ Баннер выбора города не найден")
 
-    try:
-        cookies_button = WebDriverWait(driver, 3).until(
-            EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'OK') or contains(text(), 'Хорошо')]"))
-        )
-        cookies_button.click()
-        logger.info("✅ Баннер cookies закрыт")
-        time.sleep(1)
-    except:
-        logger.info("⏩ Баннер cookies не найден")
 
 
 def close_auth_popup(driver, url):
@@ -205,6 +185,56 @@ def close_auth_popup(driver, url):
         logger.info("ℹ️ Окно авторизации не появилось")
         return False
 
+def close_banners(driver):
+    """Закрывает модальные окна и баннеры"""
+    try:
+        city_button = WebDriverWait(driver, 3).until(
+            EC.element_to_be_clickable((By.XPATH, "//button[contains(@class, 'sc-40103ed2-2 cKqwHD')]"))
+        )
+        city_button.click()
+        logger.info("✅ Баннер выбора города закрыт")
+        time.sleep(1)
+    except:
+        logger.info("⏩ Баннер выбора города не найден")
+
+    try:
+        """Пробует разные способы найти и нажать кнопку принятия cookies"""
+
+        cookie_selectors = [
+            # По уникальному классу (самый надёжный)
+            (By.XPATH, "//button[contains(@class, 'iUqWKY')]"),
+
+            # По родительскому div
+            (By.XPATH, "//div[contains(@class, 'hAORYS')]/button"),
+
+            # По тексту (если есть)
+            (By.XPATH, "//button[contains(text(), 'flex')]"),
+
+            # Если вообще ничего не поможет)
+            (By.XPATH, "//div[4]/div/div/div/button"),
+
+            # Запасной вариант
+            (By.XPATH, "//button[contains(@class, 'cKqwHD')]")
+        ]
+
+        for by, selector in cookie_selectors:
+            try:
+                button = WebDriverWait(driver, 3).until(
+                    EC.element_to_be_clickable((by, selector))
+                )
+                button.click()
+                logger.info(f"✅ Cookies приняты через: {selector}")
+                return True
+            except Exception as e:
+                logger.debug(f"❌ Не сработало: {selector} — {str(e)}")
+                continue
+
+        logger.info("ℹ️ Кнопка cookies не найдена")
+        return False
+
+
+    except:
+        logger.info("⏩ Баннер cookies не найден")
 
 @allure.step("Поиск товара по названию: {query}")
 def search_product(driver, query):
@@ -526,10 +556,6 @@ def test_site_title():
             open_website(driver, "https://new-tb.avtosushi.ru/")
         attach_screenshot(driver, "Сайт_открыт")
 
-        with allure.step("Закрытие баннеров"):
-            close_banners(driver)
-        attach_screenshot(driver, "Баннеры_закрыты")
-
         with allure.step("Получение заголовка страницы"):
             title = driver.title
             logger.info(f"Заголовок страницы: {title}")
@@ -542,6 +568,10 @@ def test_site_title():
         with allure.step("Закрытие модального окна авторизации (если есть)"):
             close_auth_popup(driver, "https://new-tb.avtosushi.ru/")
         attach_screenshot(driver, "Окно_авторизации_обработано")
+
+        with allure.step("Закрытие баннеров"):
+            close_banners(driver)
+        attach_screenshot(driver, "Баннеры_закрыты")
 
         with allure.step('Поиск товара "Ролл Домино"'):
             search_product(driver, 'Ролл Домино')
