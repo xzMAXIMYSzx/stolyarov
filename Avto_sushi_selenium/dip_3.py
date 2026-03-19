@@ -199,12 +199,41 @@ def close_banners(driver):
         logger.info("⏩ Баннер выбора города не найден")
 
     try:
-        cookies_button = WebDriverWait(driver, 3).until(
-            EC.element_to_be_clickable((By.XPATH, "//button[@class, 'sc-40103ed2-2 cKqwHD sc-6db15ef2-5 iUqWKY') or contains(text(), 'OK')]"))
-        )
-        cookies_button.click()
-        logger.info("✅ Баннер cookies закрыт")
-        time.sleep(1)
+        """Пробует разные способы найти и нажать кнопку принятия cookies"""
+
+        cookie_selectors = [
+            # По уникальному классу (самый надёжный)
+            (By.XPATH, "//button[contains(@class, 'iUqWKY')]"),
+
+            # По родительскому div
+            (By.XPATH, "//div[contains(@class, 'hAORYS')]/button"),
+
+            # По тексту (если есть)
+            (By.XPATH, "//button[contains(text(), 'flex')]"),
+
+            # Если вообще ничего не поможет)
+            (By.XPATH, "//div[4]/div/div/div/button"),
+
+            # Запасной вариант
+            (By.XPATH, "//button[contains(@class, 'cKqwHD')]")
+        ]
+
+        for by, selector in cookie_selectors:
+            try:
+                button = WebDriverWait(driver, 3).until(
+                    EC.element_to_be_clickable((by, selector))
+                )
+                button.click()
+                logger.info(f"✅ Cookies приняты через: {selector}")
+                return True
+            except Exception as e:
+                logger.debug(f"❌ Не сработало: {selector} — {str(e)}")
+                continue
+
+        logger.info("ℹ️ Кнопка cookies не найдена")
+        return False
+
+
     except:
         logger.info("⏩ Баннер cookies не найден")
 
@@ -384,7 +413,7 @@ def check_all_16_menu_sections(driver):
 
 
 # ============================================================
-# ТЕСТ 1: Проверка заголовка сайта
+# ТЕСТ 1: Проверка всех 16 пунктов меню
 # ============================================================
 @allure.feature("Главная страница")
 @allure.story("Открытие сайта")
