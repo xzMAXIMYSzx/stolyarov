@@ -33,7 +33,7 @@ pipeline {
                 bat '''
                     chcp 65001
                     cd Avto_sushi_selenium
-                    python -m pytest dip_3.py -v --alluredir=../allure-results --junitxml=../test-results.xml
+                    python -m pytest dip_4.py -v --alluredir=../allure-results --junitxml=../test-results.xml
                 '''
             }
         }
